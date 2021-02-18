@@ -1,5 +1,6 @@
 package com.wang.spring.ioc;
 
+import com.wang.spring.common.MyProxy;
 import com.wang.spring.constants.BeanScope;
 
 public interface BeanDefinition {
@@ -10,6 +11,14 @@ public interface BeanDefinition {
     boolean isSingleton();
 
     boolean isPrototype();
-
+    
+    boolean getIsProxy();
+    
+    void setIsProxy(boolean isProxy);
+    
+    MyProxy getProxy();
+    
+    void setProxy(MyProxy myProxy);
+    
     String getInitMethodName();
 }

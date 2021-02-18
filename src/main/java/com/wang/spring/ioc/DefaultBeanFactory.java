@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Resource;
 
+import com.wang.mybatis.annotation.Mapper;
+import com.wang.mybatis.core.CGLibMapperProxy;
+import com.wang.mybatis.execute.ExecutorFactory;
 import com.wang.spring.aop.AOPHelper;
 import com.wang.spring.aop.Advice;
 import com.wang.spring.aop.CGLibProxy;
@@ -32,14 +35,18 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 	private static Map<Class<?>, List<Method>> classMethodMap=null;
 	private static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = null;
 	private static CGLibProxy cgLibProxy=null;
+	private static CGLibMapperProxy cgLibMapperProxy = null;
 	/**
 	 * 初始化Bean
 	 */
 	static {
-		Set<Class<?>> beanClassSet = ClassSetHelper.getBeanClassSet(); //ClassSetHelper.getComponentClassSet();
+		Set<Class<?>> beanClassSet = ClassSetHelper.getInheritedComponentClassSet();//ClassSetHelper.getBeanClassSet(); //
+		System.out.println(beanClassSet);
 		classMethodMap = AOPHelper.getClassMethodMap();
 		methodAdvicesMap = AOPHelper.getMethodAdvicesMap();
 		cgLibProxy = new CGLibProxy(methodAdvicesMap);
+		cgLibMapperProxy = new CGLibMapperProxy(ExecutorFactory.getExecutor());
+		
 		if(beanClassSet!=null && !beanClassSet.isEmpty()) {
 			try {
 				for(Class<?> beanClass : beanClassSet) {
@@ -182,7 +189,7 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 		Objects.requireNonNull(beanName, "beanName 不能为空");
 		Objects.requireNonNull(beanDefinition, "beanDefinition 不能为空");
 		if(beanDefinitionMap.containsKey(beanName)) {
-			throw new Exception("已经存在["+beanName+"] 的定义："+getBeanDefinition(beanName));
+			System.out.println("已经存在["+beanName+"] 的定义："+getBeanDefinition(beanName));
 		}
 		else {
 			beanDefinitionMap.put(beanName, beanDefinition);
@@ -254,6 +261,9 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 		//判断是否需要代理，若需要则生成代理类
 		if(isProxyNeed(beanClass)) {
 			bean=cgLibProxy.getProxy(beanClass);
+		}
+		else if (beanClass.isAnnotationPresent(Mapper.class)) {
+			bean=cgLibMapperProxy.getProxy(beanClass);
 		}
 		else {
 			bean = beanClass.getDeclaredConstructor().newInstance();

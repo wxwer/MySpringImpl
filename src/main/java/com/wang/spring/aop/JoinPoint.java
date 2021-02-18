@@ -58,7 +58,6 @@ public class JoinPoint {
 		else {
 			return method.invoke(target, args);
 		}
-		
 	}
 	
 	

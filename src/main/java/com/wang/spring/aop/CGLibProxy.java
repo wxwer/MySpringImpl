@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
+import com.wang.spring.aop.annotation.Transaction;
 import com.wang.spring.constants.AdviceTypeConstant;
 
 import net.sf.cglib.proxy.Enhancer;
@@ -36,13 +37,11 @@ public class CGLibProxy implements MethodInterceptor{
 	public Object intercept(Object object, Method method, Object[] arg2, MethodProxy methodProxy) throws Throwable {
 		Object result=null;
 		//判断是否增强
-		if(intercept(method)) {
+		if(isAdviceNeed(method)) {
 			Map<String, List<Advice>> advices =  methodAdvicesMap.get(method);
 			try {
 				//前置通知
-				if(advices!=null && advices.containsKey(AdviceTypeConstant.BEFORE)) {
-					invokeAdvice(advices.get(AdviceTypeConstant.BEFORE));
-				}
+				invokeAdvice(advices,AdviceTypeConstant.BEFORE);
 				//环绕通知
 				if(advices!=null && advices.containsKey(AdviceTypeConstant.AROUND)) {
 					List<Advice> aroundAdvices = advices.get(AdviceTypeConstant.AROUND);
@@ -61,23 +60,17 @@ public class CGLibProxy implements MethodInterceptor{
 					result= methodProxy.invokeSuper(object, arg2);
 				}
 				//后置通知
-				if(advices!=null && advices.containsKey(AdviceTypeConstant.AFTER)) {
-					invokeAdvice(advices.get(AdviceTypeConstant.AFTER));
-				}
+				invokeAdvice(advices, AdviceTypeConstant.AFTER);
 			} 
 			catch (Exception e) {
 				// TODO: handle exception
 				e.printStackTrace();
 				//异常通知
-				if(advices!=null && advices.containsKey(AdviceTypeConstant.AFTERTHROWING)) {
-					invokeAdvice(advices.get(AdviceTypeConstant.AFTERTHROWING));
-				}
+				invokeAdvice(advices, AdviceTypeConstant.AFTERTHROWING);
 			}
 			finally {
 				//返回前通知
-				if(advices!=null && advices.containsKey(AdviceTypeConstant.AFTERRETURNING)) {
-					invokeAdvice(advices.get(AdviceTypeConstant.AFTERRETURNING));
-				}
+				invokeAdvice(advices, AdviceTypeConstant.AFTERRETURNING);
 			}
 		}
 		else {
@@ -87,17 +80,29 @@ public class CGLibProxy implements MethodInterceptor{
 		return result;
 	}
 	//执行通知增强
-	private void invokeAdvice(List<Advice> adviceList) throws Throwable {
-		if(adviceList!=null && !adviceList.isEmpty()) {
-			for(Advice advice:adviceList) {
-				Method adviceMethod = advice.getAdviceMethod();
-				Object aspect = advice.getAspect();
-				adviceMethod.invoke(aspect);
+	private void invokeAdvice(Map<String, List<Advice>> advices,String type) throws Throwable {
+		if(advices!=null && advices.containsKey(type)) {
+			List<Advice> adviceList=advices.get(type);
+			if(adviceList!=null && !adviceList.isEmpty()) {
+				for(Advice advice:adviceList) {
+					Method adviceMethod = advice.getAdviceMethod();
+					Object aspect = advice.getAspect();
+					adviceMethod.invoke(aspect);
+				}
 			}
 		}
+		
 	}
 	//判断是否增强
-	private boolean intercept(Method method) {
+	private boolean isAdviceNeed(Method method) {
 		return methodAdvicesMap.containsKey(method);
+	}
+	
+	//判断是否需要事务管理
+	private boolean isTrasactionNeed(Object object,Method method) {
+		if(object.getClass().isAnnotationPresent(Transaction.class) || method.isAnnotationPresent(Transaction.class)) {
+			return true;
+		}
+		return false;
 	}
 }

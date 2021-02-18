@@ -6,6 +6,9 @@ public class User{
     private Integer age;
 
     public User() {
+    	id=1;
+    	name="default";
+    	age=18;
     }
 
     public User(Integer id, String name, Integer age) {
@@ -43,4 +46,8 @@ public class User{
         this.age = age;
     }
 	
+    @Override
+    public String toString() {
+    	return id+":"+name+":"+age;
+    }
 }

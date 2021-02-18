@@ -32,6 +32,7 @@ public class AOPHelper {
 		AOPHelper aopHelper = new AOPHelper();
 		try {
 			aopHelper.init();
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
