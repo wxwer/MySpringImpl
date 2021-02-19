@@ -83,6 +83,12 @@ public class PreparedStatementHandler {
 			else if (Double.class.equals(type)) {
 				injectValue = Double.toString((Double) arg);
 			}
+			else if (Long.class.equals(type)) {
+				injectValue = Long.toString((Long) arg);
+			}
+			else if (Short.class.equals(type)) {
+				injectValue = Short.toString((Short) arg);
+			}
 			sqlBuilder.replace(index, index+1, injectValue);
 			index = sqlBuilder.indexOf("?");
 			i++;
@@ -100,7 +106,7 @@ public class PreparedStatementHandler {
      * @Param args 真实参数值
      **/
     private PreparedStatement typeInject(PreparedStatement preparedStatement,Class<?>[] clazzes,List<String> paramNames,List<String> params,List<Integer> paramInjectTypes,Object[] args)throws SQLException{
-        for(int i = 0; i < paramNames.size(); i++){
+    	for(int i = 0; i < paramNames.size(); i++){
             String paramName = paramNames.get(i);
             Class<?> type = clazzes[i];
             int injectIndex = params.indexOf(paramName);
@@ -124,6 +130,11 @@ public class PreparedStatementHandler {
             else if(Double.class.equals(type) || double.class.equals(type)){
                 if(injectIndex >= 0){
                     preparedStatement.setDouble(injectIndex+1,(Double)args[i]);
+                }
+            }
+            else if(Long.class.equals(type) || long.class.equals(type)){
+                if(injectIndex >= 0){
+                    preparedStatement.setLong(injectIndex+1,(Long)args[i]);
                 }
             }
         }

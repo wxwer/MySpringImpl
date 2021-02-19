@@ -4,3 +4,5 @@
 
 2.around通知不能用method.invoke，否则会出现循环调用
 应该用methodProxy.invokeSuper();
+实现事务管理，数据库连接池
+修复Long无法注入

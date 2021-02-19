@@ -2,25 +2,9 @@ package com.wang.demo.model;
 
 public class User{
     private Integer id;
-    private String name;
-    private Integer age;
-
-    public User() {
-    	id=1;
-    	name="default";
-    	age=18;
-    }
-
-    public User(Integer id, String name, Integer age) {
-        this.id = id;
-        this.name = name;
-        this.age = age;
-    }
-    public User(String name) {
-        this.id = 14;
-        this.name = name;
-        this.age = 18;
-    }
+    private String username;
+    private String password;
+    private Long timestamp;
     
     public Integer getId() {
         return id;
@@ -30,24 +14,32 @@ public class User{
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getUserName() {
+        return username;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUserName(String username) {
+        this.username = username;
     }
 
-    public Integer getAge() {
-        return age;
+    public String getPassword() {
+        return password;
     }
 
-    public void setAge(Integer age) {
-        this.age = age;
+    public void setPassword(String password) {
+        this.password = password;
     }
 	
+    public Long getTimeStamp() {
+        return timestamp;
+    }
+
+    public void setTimeStamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+    
     @Override
     public String toString() {
-    	return id+":"+name+":"+age;
+    	return "id="+id+" , name="+username+" , password="+password;
     }
 }

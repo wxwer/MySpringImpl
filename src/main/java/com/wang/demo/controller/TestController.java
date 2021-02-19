@@ -2,15 +2,13 @@ package com.wang.demo.controller;
 
 import java.util.List;
 
-import com.wang.demo.Service.Service1;
-import com.wang.demo.Service.Service2;
-import com.wang.demo.Service.UserPrintService;
-import com.wang.demo.dao.UserMapper;
+import com.alibaba.fastjson.JSON;
+import com.wang.demo.model.ResponseEntity;
 import com.wang.demo.model.User;
+import com.wang.demo.model.UserRequest;
+import com.wang.demo.service.IUserService;
 import com.wang.spring.annotation.ioc.Autowired;
-import com.wang.spring.annotation.ioc.Qualifier;
 import com.wang.spring.annotation.mvc.Controller;
-import com.wang.spring.annotation.mvc.PathVariable;
 import com.wang.spring.annotation.mvc.RequestBody;
 import com.wang.spring.annotation.mvc.RequestMapping;
 import com.wang.spring.annotation.mvc.RequestParam;
@@ -19,32 +17,54 @@ import com.wang.spring.constants.RequestMethod;
 import com.wang.spring.mvc.ModelAndView;
 
 @Controller
+@RequestMapping(value = "/user")
 public class TestController {
-	@Autowired
-	UserPrintService userPrintService;
-	@Autowired
-	Service2 userService;
 	
 	@Autowired
-	Service1 service1;
+	IUserService userService;
 	
 	@ResponseBody
-	@RequestMapping(value = "/test",method = RequestMethod.GET)
-	public User test(@RequestParam(value = "name",defaultValue = "wangxed") String name) {
-		User user = new User(name+"  ");
-		//userPrintService.printUser();
-		service1.service();
-		return user;
+	@RequestMapping(value = "/register",method = RequestMethod.POST)
+	public ResponseEntity registerUser(@RequestBody UserRequest userRequest) {
+		try {
+			boolean isRegister = userService.registerUser(userRequest);
+			if(isRegister) {
+				return ResponseEntity.success(null, userRequest.getUserName()+"注册成功...");
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return ResponseEntity.fail("注册失败");
 	}
-	@RequestMapping(value = "/users/{id}",method = RequestMethod.GET)
-	public ModelAndView getUserList(@RequestParam(value = "name",defaultValue = "root") String name,@PathVariable(value = "id",defaultValue = "23") Integer id) {
-        List<User> userList = userService.getAllUser();
-        userService.service();
-        System.out.println("user_id is "+id);
-        return new ModelAndView("test.html").addModel("user", name);
-    }
-	@RequestMapping(value = "/config")
-	public void testConfig() {
-        userService.service();
-    }
+	
+	@ResponseBody
+	@RequestMapping(value = "/login",method = RequestMethod.POST)
+	public ResponseEntity login(@RequestBody UserRequest userRequest){
+		try {
+			User user = userService.loginUser(userRequest);
+			if(user!=null) {
+				return ResponseEntity.success(user, userRequest.getUserName()+"登录成功");
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return ResponseEntity.fail("用户名或密码错误");
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/isLogin",method = RequestMethod.GET)
+	public ModelAndView isLogin(@RequestParam(value = "username") String username){
+		try {
+			boolean isLogin = userService.isUserLogin(username);
+			if(isLogin) {
+				return new ModelAndView("login_sucess.html").addModel("user", username);
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return new ModelAndView("login_failed.html").addModel("user", username);
+	}
 }

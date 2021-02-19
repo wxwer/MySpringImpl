@@ -55,7 +55,6 @@ public class HandlerAdapter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        System.out.println("body的内容是空？:"+(bodyContent==null));
         if(request.getMethod().equals("POST") && bodyContent!=null) {
         	Integer index=-1;
         	for(Integer i=0;i<parameters.length;i++) {
