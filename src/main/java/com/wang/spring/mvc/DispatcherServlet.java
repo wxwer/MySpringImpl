@@ -2,7 +2,6 @@ package com.wang.spring.mvc;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -16,33 +15,42 @@ import javax.servlet.ServletRegistration;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.alibaba.fastjson.JSON;
+import com.wang.mybatis.core.MapperHelper;
+import com.wang.spring.annotation.mvc.PathVariable;
+import com.wang.spring.annotation.mvc.RequestMapping;
+import com.wang.spring.annotation.mvc.RequestParam;
+import com.wang.spring.annotation.mvc.ResponseBody;
+import com.wang.spring.aop.AOPHelper;
 import com.wang.spring.constants.RequestMethod;
 import com.wang.spring.ioc.ClassSetHelper;
 import com.wang.spring.ioc.DefaultBeanFactory;
-import com.wang.spring.mvc.annotation.PathVariable;
-import com.wang.spring.mvc.annotation.RequestMapping;
-import com.wang.spring.mvc.annotation.RequestParam;
-import com.wang.spring.mvc.annotation.ResponseBody;
 import com.wang.spring.utils.ConfigUtil;
 import freemarker.template.Configuration;
-import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 
 public class DispatcherServlet extends HttpServlet {
-	//IOC容器工程
+	//bean工厂
 	private static DefaultBeanFactory beanFactory=DefaultBeanFactory.getInstance();
 	//请求到Handler的映射
 	private Map<Request, Handler> handlerMapping = new HashMap<>();
 	//Handler到Handler的映射
 	private Map<Handler, HandlerAdapter> adapaterMapping = new HashMap<>();
+	//FreeMarker配置对象
 	private Configuration cfg = null;
 	
 	@Override
     public void init(ServletConfig config) throws ServletException{
+		try {
+			Class.forName(AOPHelper.class.getName());
+			Class.forName(MapperHelper.class.getName());
+			beanFactory.refresh();
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		//请求解析
         initMultipartResolver();
         //多语言、国际化
@@ -69,36 +77,23 @@ public class DispatcherServlet extends HttpServlet {
 	 * @throws Exception
 	 */
 	private void InitFreemarkerResolver() throws Exception {
-		System.out.println(this.getClass().getResource("/").getPath());
 		cfg = new Configuration(Configuration.VERSION_2_3_22);
         cfg.setDirectoryForTemplateLoading(new File(this.getClass().getResource("/").getPath()+ConfigUtil.getAppJspPath()));
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
 	}
-	
+	/**
+	 * 动态注册处理静态资源的默认Servlet
+	 * @param servletContext
+	 */
 	private void registerServlet(ServletContext servletContext) {
-        //动态注册处理静态资源的默认Servlet
         ServletRegistration defaultServlet = servletContext.getServletRegistration("default");
         if(defaultServlet==null) {
         	throw new RuntimeException("无法动态注册处理静态资源的默认Servlet");
         }
         defaultServlet.addMapping(this.getClass().getResource("/").getPath()+ConfigUtil.getAppAssetPath() + "*");
     }
-	/**
-     * 请求解析
-     * @param context
-     */
-    private void initMultipartResolver(){}
-    /**
-     * 多语言、国际化
-     * @param context
-     */
-    private void initLocaleResolver(){}
-    /**
-     * 主题View层的
-     * @param context
-     */
-    private void initThemeResolver(){}
+	
     /**
      * 解析url和Method的关联关系
      * @param context
@@ -265,13 +260,13 @@ public class DispatcherServlet extends HttpServlet {
 			Map<String, String> pathVariableMap = getPathVariableMap(request);
 			Object data = handlerAdapter.handle(request, response, handler,pathVariableMap);
 			if(data instanceof ModelAndView) {
-				handlerFreemarkerResult(data,request,response);
+				ResultResolverHandler.handlerFreemarkerResult(data,cfg,request,response);
 			}
 			else if(isResponseBody(handler)){
-				handleJsonResult(data,response);
+				ResultResolverHandler.handleJsonResult(data,response);
 			}
 			else {
-				handleStringResult(data, response);
+				ResultResolverHandler.handleStringResult(data, response);
 			}
 		}
 		else {
@@ -279,81 +274,27 @@ public class DispatcherServlet extends HttpServlet {
 		}
 	}
     /**
-     * 返回字符串数据
+     * handler中的方法是否被ResponseBody注解
+     * @param handler
+     * @return
      */
-    private void handleStringResult(Object data, HttpServletResponse response) throws IOException {
-        System.out.println("String resolver");
-        response.setCharacterEncoding("UTF-8");
-        PrintWriter writer = response.getWriter();
-        writer.write(data.toString());
-        writer.flush();
-        writer.close();
-    }
-    /**
-     * 返回JSON数据
-     */
-    private void handleJsonResult(Object data, HttpServletResponse response) throws IOException {
-    	response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        PrintWriter writer = response.getWriter();
-        String json = JSON.toJSON(data).toString();
-        writer.write(json);
-        writer.flush();
-        writer.close();
-    }
     private boolean isResponseBody(Handler handler) {
     	return handler.method.isAnnotationPresent(ResponseBody.class) || handler.controller.getClass().isAnnotationPresent(ResponseBody.class);
     }
+    
     /**
-     *用JSP解析器解析ModelAndView
-     * @param data
-     * @param request
-     * @param response
-     * @throws IOException
-     * @throws ServletException
+     * 请求解析
+     * @param context
      */
-    private void handleViewResult(Object data, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-    	if(data==null || !(data instanceof ModelAndView)) {
-        	throw new RuntimeException("无法转换成ModelAndView");
-        }
-        ModelAndView view = (ModelAndView) data;
-    	String path = view.getPath();
-        if (StringUtils.isNotEmpty(path)) {
-            if (path.startsWith("/")) { //重定向
-                response.sendRedirect(request.getContextPath() + path);
-            } else { //请求转发
-                Map<String, Object> model = view.getModel();
-                for (Map.Entry<String, Object> entry : model.entrySet()) {
-                    request.setAttribute(entry.getKey(), entry.getValue());
-                }
-                request.getRequestDispatcher(ConfigUtil.getAppJspPath() + path).forward(request, response);
-            }
-        }
-    }
+    private void initMultipartResolver(){}
     /**
-     * 用freemarker解析ModelAndView
-     * @param data
-     * @param request
-     * @param response
-     * @throws IOException
-     * @throws ServletException
+     * 多语言、国际化
+     * @param context
      */
-    private void handlerFreemarkerResult(Object data, HttpServletRequest request, HttpServletResponse response) throws Exception, IOException {
-    	if(data==null || !(data instanceof ModelAndView)) {
-        	throw new RuntimeException("无法转换成ModelAndView");
-        }
-        ModelAndView view = (ModelAndView) data;
-        String path = view.getPath();
-        if (StringUtils.isNotEmpty(path)) {
-        	if (path.startsWith("/") || path.endsWith("/")) { //重定向
-                response.sendRedirect(request.getContextPath() + path);
-            } else {
-            	Template temp = cfg.getTemplate(path);
-                response.setContentType("text/html");
-                response.setCharacterEncoding("UTF-8");
-                PrintWriter writer = response.getWriter();
-                temp.process(view.getModel(), writer);
-            }
-        }
-    }
+    private void initLocaleResolver(){}
+    /**
+     * 主题View层的
+     * @param context
+     */
+    private void initThemeResolver(){}
 }

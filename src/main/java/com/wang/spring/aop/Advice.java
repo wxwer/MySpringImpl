@@ -1,10 +1,17 @@
 package com.wang.spring.aop;
 
 import java.lang.reflect.Method;
-
+/**
+ * 增强类
+ * @author Administrator
+ *
+ */
 public class Advice {
+	//切面对象
 	private Object aspect;
+	//增强方法
 	private Method adviceMethod;
+	//级别，一个方法有多个增强时根据级别排序
 	private Integer order;
 	private String throwName;
 	public Advice(Object aspect, Method adviceMethod,Integer order) {

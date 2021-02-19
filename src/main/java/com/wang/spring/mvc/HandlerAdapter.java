@@ -11,9 +11,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson.JSON;
-import com.wang.spring.mvc.annotation.PathVariable;
-import com.wang.spring.mvc.annotation.RequestBody;
-import com.wang.spring.mvc.annotation.RequestParam;
+import com.wang.spring.annotation.mvc.PathVariable;
+import com.wang.spring.annotation.mvc.RequestBody;
+import com.wang.spring.annotation.mvc.RequestParam;
 
 
 public class HandlerAdapter {

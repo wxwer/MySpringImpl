@@ -76,6 +76,4 @@ public class GenericBeanDefinition implements BeanDefinition{
 		// TODO Auto-generated method stub
 		this.isProxy=isProxy;
 	}
-    
-    
 }

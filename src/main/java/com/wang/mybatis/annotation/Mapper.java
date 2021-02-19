@@ -6,7 +6,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.wang.spring.ioc.annotation.Component;
+import com.wang.spring.annotation.ioc.Component;
 
 @Retention(RUNTIME)
 @Target(TYPE)

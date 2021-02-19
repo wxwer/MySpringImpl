@@ -4,8 +4,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public final class ReflectionUtil {
-
-
     /**
      * 创建实例
      */
@@ -46,7 +44,7 @@ public final class ReflectionUtil {
      */
     public static void setField(Object obj, Field field, Object value) {
         try {
-            field.setAccessible(true); //去除私有权限
+            field.setAccessible(true); 
             field.set(obj, value);
         } catch (Exception e) {
             throw new RuntimeException(e);

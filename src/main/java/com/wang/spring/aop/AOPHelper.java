@@ -10,39 +10,58 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.collections4.map.HashedMap;
-import com.wang.spring.aop.annotation.After;
-import com.wang.spring.aop.annotation.AfterReturning;
-import com.wang.spring.aop.annotation.AfterThrowing;
-import com.wang.spring.aop.annotation.Around;
-import com.wang.spring.aop.annotation.Aspect;
-import com.wang.spring.aop.annotation.Before;
-import com.wang.spring.aop.annotation.Pointcut;
+
+import com.wang.spring.annotation.aop.After;
+import com.wang.spring.annotation.aop.AfterReturning;
+import com.wang.spring.annotation.aop.AfterThrowing;
+import com.wang.spring.annotation.aop.Around;
+import com.wang.spring.annotation.aop.Aspect;
+import com.wang.spring.annotation.aop.Before;
+import com.wang.spring.annotation.aop.Pointcut;
 import com.wang.spring.constants.AdviceTypeConstant;
+import com.wang.spring.ioc.BeanDefinition;
+import com.wang.spring.ioc.BeanDefinitionRegistry;
 import com.wang.spring.ioc.ClassSetHelper;
+import com.wang.spring.ioc.DefaultBeanFactory;
+import com.wang.spring.ioc.GenericBeanDefinition;
 
 public class AOPHelper {
+	private static AOPHelper aopHelper=null;
 	//需要代理的目标类和目标方法的映射
-	static Map<Class<?>, List<Method>> classMethodMap= new ConcurrentHashMap();
+	private static Map<Class<?>, List<Method>> classMethodMap= new ConcurrentHashMap();
 	//需要代理的目标方法和增强类的映射，value的map的key为通知的类型
-	static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = new ConcurrentHashMap();
+	private static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = new ConcurrentHashMap();
 	/**
 	 * 初始化aop助手
 	 */
 	static {
-		AOPHelper aopHelper = new AOPHelper();
 		try {
-			aopHelper.init();
-			
+			AOPHelper.init();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	private AOPHelper() {}
+	/**
+	 * 获得AOPHelper的单例
+	 * @return
+	 */
+	public static AOPHelper getInstance() {
+		synchronized (AOPHelper.class) {
+			if(aopHelper==null) {
+				synchronized (AOPHelper.class) {
+					aopHelper = new AOPHelper();
+				}
+			}
+		}
+		return aopHelper;
+	}
 	/**
 	 * AOP助手初始化方法，扫描有@Aspect注解的类，获取代理目标和增强的映射
 	 * @throws Exception
 	 */
-	public void init() throws Exception {
+	public static void init() throws Exception {
 		Set<Class<?>> aspectClassSet = ClassSetHelper.getClassSetByAnnotation(Aspect.class);
 		for(Class<?> aspectClass : aspectClassSet) {
 			Map<String, String> pointcuts = new HashedMap<>();
@@ -80,6 +99,28 @@ public class AOPHelper {
 				});
 			}
 		}
+		//重新注册需要增强的类，注入代理类
+		try {
+			CGLibProxy cgLibProxy = new CGLibProxy(methodAdvicesMap);
+			for(Class<?> cls:classMethodMap.keySet()) {
+				BeanDefinition beanDefinition=null;
+				if(BeanDefinitionRegistry.containsBeanDefinition(cls.getName())) {
+					beanDefinition = BeanDefinitionRegistry.getBeanDefinition(cls.getName());
+				}
+				else {
+					beanDefinition = new GenericBeanDefinition();
+					beanDefinition.setBeanClass(cls);
+				}
+				beanDefinition.setIsProxy(true);
+				beanDefinition.setProxy(cgLibProxy);
+				BeanDefinitionRegistry.registryBeanDefinition(cls.getName(), beanDefinition);
+				System.out.println("AOPHelper 注册 "+cls.getName());
+			}
+			//DefaultBeanFactory.getInstance().refresh();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	/**
 	 * 获取相应的映射
@@ -99,7 +140,7 @@ public class AOPHelper {
 	 * @param pointcuts
 	 * @throws Exception
 	 */
-    private void injectMethodAdvices(Object aspect,Method method,Map<String, String> pointcuts) throws Exception {
+    private static void injectMethodAdvices(Object aspect,Method method,Map<String, String> pointcuts) throws Exception {
     	String pointValue=null;
     	String pointType = null;
     	Integer order = -1;
@@ -166,7 +207,7 @@ public class AOPHelper {
 	 * @return
 	 * @throws Exception
 	 */
-	private String parsePointValue(Map<String, String> pointcuts,String pointValue) throws Exception {
+	private static String parsePointValue(Map<String, String> pointcuts,String pointValue) throws Exception {
 		if(pointValue==null || pointValue.equals("")) {
 			return null;
 		}
@@ -188,7 +229,7 @@ public class AOPHelper {
 	 * @param value
 	 * @return
 	 */
-    private  Map<String, String> getClassAndMethod(String value) {
+    private  static  Map<String, String> getClassAndMethod(String value) {
         Map<String, String> map = new HashMap<String, String>();
         String[] split = value.split("\\.");
         if (split.length == 0) {
@@ -197,7 +238,7 @@ public class AOPHelper {
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < split.length - 1; i++) {
             if (i == split.length - 2) {
-                stringBuilder.append(split[i]); //last
+                stringBuilder.append(split[i]);
             } else {
                 stringBuilder.append(split[i] + ".");
             }

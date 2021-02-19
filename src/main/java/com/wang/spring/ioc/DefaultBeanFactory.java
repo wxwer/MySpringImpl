@@ -2,79 +2,54 @@ package com.wang.spring.ioc;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Resource;
-
-import com.wang.mybatis.annotation.Mapper;
-import com.wang.mybatis.core.CGLibMapperProxy;
-import com.wang.mybatis.execute.ExecutorFactory;
-import com.wang.spring.aop.AOPHelper;
-import com.wang.spring.aop.Advice;
-import com.wang.spring.aop.CGLibProxy;
+import com.wang.spring.annotation.ioc.Autowired;
+import com.wang.spring.annotation.ioc.Bean;
+import com.wang.spring.annotation.ioc.Component;
+import com.wang.spring.annotation.ioc.Configuration;
+import com.wang.spring.annotation.ioc.Qualifier;
+import com.wang.spring.annotation.ioc.Service;
+import com.wang.spring.annotation.mvc.Controller;
+import com.wang.spring.common.MyProxy;
 import com.wang.spring.constants.BeanScope;
-import com.wang.spring.ioc.annotation.Autowired;
-import com.wang.spring.ioc.annotation.Bean;
-import com.wang.spring.ioc.annotation.Component;
-import com.wang.spring.ioc.annotation.Configuration;
-import com.wang.spring.ioc.annotation.Qualifier;
-import com.wang.spring.ioc.annotation.Service;
-import com.wang.spring.mvc.annotation.Controller;
 
-public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
+public class DefaultBeanFactory implements BeanFactory{
 	//bean工厂单例
 	private static DefaultBeanFactory instance = null;
-	//Bean容器
+	//Bean容器，也叫IOC容器
 	private static Map<String, Object> beanMap = new ConcurrentHashMap<>();
-	//BeanDefinition容器
-	private static Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
-	//代理映射和代理工厂
-	private static Map<Class<?>, List<Method>> classMethodMap=null;
-	private static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = null;
-	private static CGLibProxy cgLibProxy=null;
-	private static CGLibMapperProxy cgLibMapperProxy = null;
+	//Bean的注册信息BeanDefinition容器
+	private static Map<String, BeanDefinition> beanDefinitionMap = BeanDefinitionRegistry.getBeanDefinitionMap();
 	/**
 	 * 初始化Bean
 	 */
 	static {
-		Set<Class<?>> beanClassSet = ClassSetHelper.getInheritedComponentClassSet();//ClassSetHelper.getBeanClassSet(); //
-		System.out.println(beanClassSet);
-		classMethodMap = AOPHelper.getClassMethodMap();
-		methodAdvicesMap = AOPHelper.getMethodAdvicesMap();
-		cgLibProxy = new CGLibProxy(methodAdvicesMap);
-		cgLibMapperProxy = new CGLibMapperProxy(ExecutorFactory.getExecutor());
-		
+		Set<Class<?>> beanClassSet = ClassSetHelper.getBeanClassSet();//ClassSetHelper.getInheritedComponentClassSet(); //
 		if(beanClassSet!=null && !beanClassSet.isEmpty()) {
 			try {
 				for(Class<?> beanClass : beanClassSet) {
 					GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
 					genericBeanDefinition.setBeanClass(beanClass);
-					getInstance().registryBeanDefinition(beanClass.getName(), genericBeanDefinition);
+					BeanDefinitionRegistry.registryBeanDefinition(beanClass.getName(), genericBeanDefinition);
 				}
-				//getInstance().refresh();
 				//注册配置的bean
 				getInstance().initConfigBean();
 				//注册其他所有的bean
-				getInstance().refresh();
-				
 			} catch (Exception e) {
-				// TODO: handle exception
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	/**
-	 * 私有构造器
-	 */
 	private  DefaultBeanFactory() {
 		// TODO Auto-generated constructor stub
 	}
 	/**
-	 * 获取单例工厂
+	 * 获取单例Bean工厂
 	 * @return
 	 */
 	public static DefaultBeanFactory getInstance() {
@@ -90,9 +65,7 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 	public static Map<String,Object> getBeanMap() {
 		return beanMap;
 	}
-	public static Map<String,BeanDefinition> getBeanDefinitionMap() {
-		return beanDefinitionMap;
-	}
+	
 	/**
 	 * 根据类的全限定名获取bean
 	 */
@@ -181,38 +154,6 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 		}
 	}
 	/**
-	 * 注册BeanDefinition
-	 */
-	@Override
-	public void registryBeanDefinition(String beanName, BeanDefinition beanDefinition) throws Exception {
-		// TODO Auto-generated method stub
-		Objects.requireNonNull(beanName, "beanName 不能为空");
-		Objects.requireNonNull(beanDefinition, "beanDefinition 不能为空");
-		if(beanDefinitionMap.containsKey(beanName)) {
-			System.out.println("已经存在["+beanName+"] 的定义："+getBeanDefinition(beanName));
-		}
-		else {
-			beanDefinitionMap.put(beanName, beanDefinition);
-		}
-	}
-	/**
-	 * 获取BeanDefinition
-	 */
-	@Override
-	public BeanDefinition getBeanDefinition(String beanName) {
-		// TODO Auto-generated method stub
-		return beanDefinitionMap.get(beanName);
-	}
-	/**
-	 * BeanDefinition是否存在
-	 */
-	@Override
-	public boolean containsBeanDefinition(String beanName) {
-		// TODO Auto-generated method stub
-		return beanDefinitionMap.containsKey(beanName);
-	}
-	
-	/**
 	 * 注入@Configuration中配置bean
 	 * @throws Exception
 	 */
@@ -225,7 +166,7 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 			//注册Configuration
 			GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
 			genericBeanDefinition.setBeanClass(configClass);
-			getInstance().registryBeanDefinition(configClass.getName(), genericBeanDefinition);
+			BeanDefinitionRegistry.registryBeanDefinition(configClass.getName(), genericBeanDefinition);
 			Object configBean = getBean(configClass);
 			Method[] methods = configClass.getDeclaredMethods();
 			for(Method method:methods) {
@@ -259,11 +200,9 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 		//找到实现类
 		beanClass = findImplementClass(beanClass,null);
 		//判断是否需要代理，若需要则生成代理类
-		if(isProxyNeed(beanClass)) {
-			bean=cgLibProxy.getProxy(beanClass);
-		}
-		else if (beanClass.isAnnotationPresent(Mapper.class)) {
-			bean=cgLibMapperProxy.getProxy(beanClass);
+		if(beanDefinition.getIsProxy() && beanDefinition.getProxy()!=null) {
+			MyProxy myProxy = beanDefinition.getProxy();
+			bean=myProxy.getProxy(beanClass);
 		}
 		else {
 			bean = beanClass.getDeclaredConstructor().newInstance();
@@ -281,10 +220,6 @@ public class DefaultBeanFactory implements BeanDefinitionRegistry,BeanFactory{
 		//注入bean的属性
 		fieldInject(beanClass, bean, false);
 		return bean;
-	}
-	
-	private boolean isProxyNeed(Class<?> beanClass) {
-		return classMethodMap.containsKey(beanClass);
 	}
 	/**
 	 * 找到实现类

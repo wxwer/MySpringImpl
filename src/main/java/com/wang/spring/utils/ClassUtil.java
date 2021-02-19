@@ -11,7 +11,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public final class ClassUtil {
-//  private static final Logger LOGGER = LoggerFactory.getLogger(ClassUtil.class);
   /**
    * 获取类加载器
    */
@@ -30,7 +29,6 @@ public final class ClassUtil {
       try {
           cls = Class.forName(className, isInitialized, getClassLoader());
       } catch (ClassNotFoundException e) {
-//          LOGGER.error("load class failure", e);
           throw new RuntimeException(e);
       }
       return cls;
@@ -77,12 +75,16 @@ public final class ClassUtil {
               }
           }
       } catch (Exception e) {
-//          LOGGER.error("get class set failure", e);
           throw new RuntimeException(e);
       }
       return classSet;
   }
-
+  /**
+   * 将指定路径下的类对象添加到集合classSet中
+   * @param classSet
+   * @param packagePath
+   * @param packageName
+   */
   private static void addClass(Set<Class<?>> classSet, String packagePath, String packageName) {
       File[] files = new File(packagePath).listFiles(new FileFilter() {
           public boolean accept(File file) {
@@ -110,7 +112,11 @@ public final class ClassUtil {
           }
       }
   }
-
+  /**
+   * 加载并添加类对象
+   * @param classSet
+   * @param className
+   */
   private static void doAddClass(Set<Class<?>> classSet, String className) {
       Class<?> cls = loadClass(className, false);
       classSet.add(cls);

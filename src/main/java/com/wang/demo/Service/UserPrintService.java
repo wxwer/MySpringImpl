@@ -2,10 +2,10 @@ package com.wang.demo.Service;
 
 import javax.annotation.Resource;
 
-import com.wang.spring.ioc.annotation.Autowired;
-import com.wang.spring.ioc.annotation.Qualifier;
-import com.wang.spring.ioc.annotation.Service;
-import com.wang.spring.mvc.annotation.Controller;
+import com.wang.spring.annotation.ioc.Autowired;
+import com.wang.spring.annotation.ioc.Qualifier;
+import com.wang.spring.annotation.ioc.Service;
+import com.wang.spring.annotation.mvc.Controller;
 
 @Service
 public class UserPrintService{

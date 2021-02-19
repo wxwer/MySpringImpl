@@ -21,13 +21,11 @@ public final class PropsUtil {
           props = new Properties();
           props.load(is);
       } catch (IOException e) {
-//          LOGGER.error("load properties file failure", e);
       } finally {
           if (is != null) {
               try {
                   is.close();
               } catch (IOException e) {
-//                  LOGGER.error("close input stream failure", e);
               }
           }
       }
@@ -84,6 +82,24 @@ public final class PropsUtil {
       boolean value = defaultValue;
       if (props.containsKey(key)) {
           value = Boolean.parseBoolean(props.getProperty(key));
+      }
+      return value;
+  }
+  
+  /**
+   * 获取 boolean 类型属性（默认值为 false）
+   */
+  public static Long getLong(Properties props, String key) {
+      return getLong(props, key);
+  }
+
+  /**
+   * 获取 boolean 类型属性（可指定默认值）
+   */
+  public static Long getLong(Properties props, String key, Long defaultValue) {
+      Long value = defaultValue;
+      if (props.containsKey(key)) {
+          value =Long.parseLong(props.getProperty(key));
       }
       return value;
   }

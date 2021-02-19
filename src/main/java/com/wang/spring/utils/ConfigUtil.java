@@ -41,6 +41,25 @@ public class ConfigUtil {
     }
 
     /**
+     *  是否使用连接池
+     */
+    public static Boolean isDataSourcePool() {
+        return PropsUtil.getBoolean(CONFIG_PROPS, ConfigConstant.POOL_USEPOOL,false);
+    }
+    /**
+     * 获取连接池最大连接数
+     */
+    public static Integer getDataSourcePoolMaxSize() {
+        return PropsUtil.getInt(CONFIG_PROPS, ConfigConstant.POOL_MAXSIZE,50);
+    }
+    /**
+     * 获取阻塞等待时间
+     */
+    public static Long getDataSourcePoolWaitTimeMill() {
+        return PropsUtil.getLong(CONFIG_PROPS, ConfigConstant.POOL_WAITTIMEMILL,10000L);
+    }
+    
+    /**
      * 获取应用基础包名
      */
     public static String getAppBasePackage() {

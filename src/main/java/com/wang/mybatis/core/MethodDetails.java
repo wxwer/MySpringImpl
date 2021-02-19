@@ -3,17 +3,15 @@ package com.wang.mybatis.core;
 import java.util.List;
 
 public class MethodDetails{
+	//方法返回类型
     private Class<?> returnType;
-
+    //是否返回集合
     private boolean HasSet;
-
-    /**æ–¹æ³•è¾“å…¥å�‚æ•°ç±»åž‹é›†å�ˆ*/
+    //参数类型
     private Class<?>[] parameterTypes;
-
-    /**æ–¹æ³•è¾“å…¥å�‚æ•°å��é›†å�ˆ*/
+    //参数名称
     private List<String> parameterNames;
-
-    /**sqlè¯­å�¥é›†å�ˆ*/
+    //解析得到的Sql包装对象
     private SqlSource sqlSource;
 
     public Class<?> getReturnType() {

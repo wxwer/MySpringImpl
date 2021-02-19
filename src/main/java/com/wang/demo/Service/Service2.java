@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.wang.demo.model.User;
-import com.wang.spring.ioc.annotation.Autowired;
-import com.wang.spring.ioc.annotation.Service;
+import com.wang.spring.annotation.ioc.Autowired;
+import com.wang.spring.annotation.ioc.Service;
 
 import redis.clients.jedis.Jedis;
 

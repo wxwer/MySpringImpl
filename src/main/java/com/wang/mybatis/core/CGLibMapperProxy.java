@@ -1,45 +1,51 @@
 package com.wang.mybatis.core;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
-
 import com.wang.mybatis.annotation.Delete;
 import com.wang.mybatis.annotation.Insert;
 import com.wang.mybatis.annotation.Select;
 import com.wang.mybatis.annotation.Update;
 import com.wang.mybatis.constant.SqlTypeConstant;
 import com.wang.mybatis.execute.Executor;
-import com.wang.mybatis.execute.SimpleExecutor;
 import com.wang.spring.common.MyProxy;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
+/**
+ * 使用CGLib库实现的动态代理，可以对@Mapper注解的接口生成代理对象
+ * 将@Select,@Update,@Delete,@Insert注解中SQL语句生成实际的代理执行
+ * @author Administrator
+ *
+ */
 public class CGLibMapperProxy implements MethodInterceptor,MyProxy{
-    private SimpleExecutor executor=null;
+	//执行器
+	private Executor executor=null;
 
-    public CGLibMapperProxy(SimpleExecutor executor) {
+    public CGLibMapperProxy(Executor executor) {
         this.executor = executor;
     }
+    /**
+     * 对方法进行拦截代理
+     */
     @Override
 	public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
         Object result = null;
         if(isIntercept(method)){
         	// getMethodType
-        	System.out.println(executor.mapperCore.getMethodDetails(method).getSqlSource().getSql());
-            Integer methodType = executor.mapperCore.getMethodDetails(method).getSqlSource().getExecuteType();
-            System.out.println("methodType: "+methodType);
+            Integer methodType = MapperHelper.getMethodDetails(method).getSqlSource().getExecuteType();
             if(methodType == null){
                 throw new RuntimeException("method is normal sql method");
             }
+            //如果是被@Select注解
             if(methodType == SqlTypeConstant.SELECT_TYPE){
-            	
                 List<Object> list = executor.select(method,args);
                 result = list;
-                if(!executor.mapperCore.getMethodDetails(method).isHasSet()){
+                //根据情况返回一个对象列表或一个实例对象
+                if(!MapperHelper.getMethodDetails(method).isHasSet()){
                     if(list.size() == 0){
                         result = null;
                     }else {
@@ -47,6 +53,7 @@ public class CGLibMapperProxy implements MethodInterceptor,MyProxy{
                     }
                 }
             }else{
+            	//如果是被@Update,@Delete,@Insert注解
                 Integer count = executor.update(method,args);
                 result = count;
             }
@@ -56,7 +63,9 @@ public class CGLibMapperProxy implements MethodInterceptor,MyProxy{
 		}
         return result;
     }
-    
+    /**
+     * 获得代理对象
+     */
     @Override
     public Object getProxy(Class<?> cls) {
 		Enhancer enhancer = new Enhancer();
@@ -64,7 +73,11 @@ public class CGLibMapperProxy implements MethodInterceptor,MyProxy{
 		enhancer.setCallback(this);
 		return enhancer.create();
 	}
-    
+    /**
+     * 判断方法是否需要被代理
+     * @param method
+     * @return
+     */
     private boolean isIntercept(Method method) {
     	for(Annotation annotation : method.getAnnotations()) {
     		if(annotation.annotationType().equals(Select.class) ||

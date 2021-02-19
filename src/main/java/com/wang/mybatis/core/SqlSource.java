@@ -10,19 +10,23 @@ import java.util.List;
  * -> paramInjectTypes = {0,1}
  **/
 public class SqlSource {
-    /**sql语句，待输入字段替换成?*/
+    //sql语句，待输入字段替换成?
     private String sql;
-    /**待输入字段*/
+    //待输入字段
     private List<String> params = new ArrayList<>();
     //注入的类型,0表示拼接，1表示动态注入
     private List<Integer> paramInjectTypes = new ArrayList<>();
-    /**select update insert delete*/
+    //Sql语句的类型，select update insert delete等
     private Integer executeType;
     
     public SqlSource(String sql){
         this.sql = sqlInject(sql);
     }
-
+    /**
+     * 解析Sql语句，将#{ }及${ }参数替换为?，并获得参数名与注入方式列表
+     * @param sql
+     * @return
+     */
     private String sqlInject(String sql){
     	
         String labelPrefix1 = "${";

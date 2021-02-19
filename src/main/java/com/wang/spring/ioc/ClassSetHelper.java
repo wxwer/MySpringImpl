@@ -15,13 +15,17 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.annotation.Resources;
 
+import com.wang.spring.annotation.ioc.Component;
+import com.wang.spring.annotation.ioc.Service;
+import com.wang.spring.annotation.mvc.Controller;
 import com.wang.spring.constants.ConfigConstant;
-import com.wang.spring.ioc.annotation.Component;
-import com.wang.spring.ioc.annotation.Service;
-import com.wang.spring.mvc.annotation.Controller;
 import com.wang.spring.utils.ClassUtil;
 import com.wang.spring.utils.PropsUtil;
-
+/**
+ * 类集合助手，可扫描配置文件中的包路径，获得指定类型或被指定注解的类对象集合
+ * @author Administrator
+ *
+ */
 public class ClassSetHelper {
 	private static Set<Class<?>> CLASS_SET;
 	static {
@@ -29,11 +33,17 @@ public class ClassSetHelper {
 		String basePackName = PropsUtil.getString(props, ConfigConstant.APP_BASE_PACKAGE);
 		CLASS_SET = ClassUtil.getClassSet(basePackName);
 	}
-	
+	/**
+	 * 获得所有类对象集合
+	 * @return
+	 */
 	public static Set<Class<?>> getClassSet() {
         return CLASS_SET;
     }
-	
+	/**
+	 * 获得被Component注解的类对象集合
+	 * @return
+	 */
 	public static Set<Class<?>> getComponentClassSet(){
         Set<Class<?>> classSet = new HashSet<Class<?>>();
         for (Class<?> clz : CLASS_SET) {
@@ -43,7 +53,10 @@ public class ClassSetHelper {
         }
         return classSet;
     }
-	
+	/**
+	 * 获得被Service注解的类对象集合
+	 * @return
+	 */
     public static Set<Class<?>> getServiceClassSet(){
         Set<Class<?>> classSet = new HashSet<Class<?>>();
         for (Class<?> clz : CLASS_SET) {
@@ -53,7 +66,10 @@ public class ClassSetHelper {
         }
         return classSet;
     }
-
+    /**
+	 * 获得被Controller注解的类对象集合
+	 * @return
+	 */
     public static Set<Class<?>> getControllerClassSet(){
         Set<Class<?>> classSet = new HashSet<Class<?>>();
         for (Class<?> cls : CLASS_SET) {
@@ -63,8 +79,10 @@ public class ClassSetHelper {
         }
         return classSet;
     }
-
-
+    /**
+	 * 获得被Component,Service,Controller注解的类对象集合
+	 * @return
+	 */
     public static Set<Class<?>> getBeanClassSet() {
         Set<Class<?>> beanClassSet = new HashSet<Class<?>>();
         beanClassSet.addAll(getServiceClassSet());

@@ -1,8 +1,9 @@
 package com.wang.demo.Service;
+import com.wang.demo.dao.UserMapper;
 import com.wang.demo.model.User;
-import com.wang.spring.aop.annotation.Transaction;
-import com.wang.spring.ioc.annotation.Autowired;
-import com.wang.spring.ioc.annotation.Service;
+import com.wang.spring.annotation.aop.Transaction;
+import com.wang.spring.annotation.ioc.Autowired;
+import com.wang.spring.annotation.ioc.Service;
 
 @Service("service1")
 public class Service1 implements IService{
@@ -22,7 +23,8 @@ public class Service1 implements IService{
 		System.out.println(service2.getAllUser());
 		System.out.println("这是第一个实现");
 		
-		System.out.println("userMapper的查询结果为："+userMapper.selectUsers(0));
+		System.out.println("userMapper的查询结果1为："+userMapper.selectUsers(0));
+		System.out.println("userMapper的查询结果2为："+userMapper.selectUsers(1));
 		
 	}
 }
