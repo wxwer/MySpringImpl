@@ -1,8 +1,5 @@
 package com.wang.demo.controller;
 
-import java.util.List;
-
-import com.alibaba.fastjson.JSON;
 import com.wang.demo.model.ResponseEntity;
 import com.wang.demo.model.User;
 import com.wang.demo.model.UserRequest;
@@ -66,5 +63,20 @@ public class TestController {
 			e.printStackTrace();
 		}
 		return new ModelAndView("login_failed.html").addModel("user", username);
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/logout",method = RequestMethod.GET)
+	public ResponseEntity loginout(@RequestParam(value = "username") String username){
+		try {
+			boolean isLogout = userService.logout(username);
+			if(isLogout) {
+				return ResponseEntity.success(null, username+"注销成功");
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return ResponseEntity.fail(username+"注销失败");
 	}
 }

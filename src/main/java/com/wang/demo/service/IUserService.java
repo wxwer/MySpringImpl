@@ -9,4 +9,6 @@ public interface IUserService {
 	
 	boolean isUserLogin(String username);
 	
+	boolean logout(String username);
+	
 }

@@ -45,4 +45,15 @@ public class UserService implements IUserService{
 		return jedis.exists(key);
 	}
 
+	@Override
+	public boolean logout(String username) {
+		// TODO Auto-generated method stub
+		String key = "login:"+username;
+		if(!jedis.exists(key)) {
+			return false;
+		}
+		jedis.del(key);
+		return true;
+	}
+
 }
