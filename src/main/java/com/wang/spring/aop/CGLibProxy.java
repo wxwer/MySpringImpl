@@ -111,7 +111,7 @@ public class CGLibProxy implements MethodInterceptor,MyProxy{
 	
 	//判断是否需要事务管理
 	private boolean isTrasactionNeed(Object object,Method method) {
-		if(transactionManager!=null && object.getClass().isAnnotationPresent(Transaction.class) || method.isAnnotationPresent(Transaction.class)) {
+		if(transactionManager!=null && (object.getClass().isAnnotationPresent(Transaction.class) || method.isAnnotationPresent(Transaction.class))) {
 			return true;
 		}
 		return false;
