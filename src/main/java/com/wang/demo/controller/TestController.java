@@ -6,6 +6,7 @@ import com.wang.demo.model.UserRequest;
 import com.wang.demo.service.IUserService;
 import com.wang.spring.annotation.ioc.Autowired;
 import com.wang.spring.annotation.mvc.Controller;
+import com.wang.spring.annotation.mvc.PathVariable;
 import com.wang.spring.annotation.mvc.RequestBody;
 import com.wang.spring.annotation.mvc.RequestMapping;
 import com.wang.spring.annotation.mvc.RequestParam;
@@ -50,7 +51,6 @@ public class TestController {
 		return ResponseEntity.fail("用户名或密码错误");
 	}
 	
-	@ResponseBody
 	@RequestMapping(value = "/isLogin",method = RequestMethod.GET)
 	public ModelAndView isLogin(@RequestParam(value = "username") String username){
 		try {
@@ -78,5 +78,20 @@ public class TestController {
 			e.printStackTrace();
 		}
 		return ResponseEntity.fail(username+"注销失败");
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/findUser/{id}",method = RequestMethod.GET)
+	public ResponseEntity loginout(@PathVariable("1") Integer id){
+		try {
+			User user= userService.findUser(id);
+			if(user!=null) {
+				return ResponseEntity.success(user, "成功找到id="+id+"的用户");
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return ResponseEntity.fail("未找到id="+id+"的用户");
 	}
 }

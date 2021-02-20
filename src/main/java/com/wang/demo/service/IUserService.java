@@ -11,4 +11,5 @@ public interface IUserService {
 	
 	boolean logout(String username);
 	
+	User findUser(Integer id);
 }

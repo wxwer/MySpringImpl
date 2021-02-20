@@ -56,4 +56,10 @@ public class UserService implements IUserService{
 		return true;
 	}
 
+	@Override
+	public User findUser(Integer id) {
+		// TODO Auto-generated method stub
+		return userMapper.selectUser(id);
+	}
+
 }
