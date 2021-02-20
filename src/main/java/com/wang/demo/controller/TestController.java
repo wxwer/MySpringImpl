@@ -82,7 +82,7 @@ public class TestController {
 	
 	@ResponseBody
 	@RequestMapping(value = "/findUser/{id}",method = RequestMethod.GET)
-	public ResponseEntity loginout(@PathVariable("1") Integer id){
+	public ResponseEntity loginout(@PathVariable("id") Integer id){
 		try {
 			User user= userService.findUser(id);
 			if(user!=null) {

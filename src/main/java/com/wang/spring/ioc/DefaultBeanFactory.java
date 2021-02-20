@@ -13,9 +13,12 @@ import com.wang.spring.annotation.ioc.Component;
 import com.wang.spring.annotation.ioc.Configuration;
 import com.wang.spring.annotation.ioc.Qualifier;
 import com.wang.spring.annotation.ioc.Service;
+import com.wang.spring.annotation.ioc.Value;
 import com.wang.spring.annotation.mvc.Controller;
 import com.wang.spring.common.MyProxy;
 import com.wang.spring.constants.BeanScope;
+import com.wang.spring.utils.ConfigUtil;
+import com.wang.spring.utils.PropsUtil;
 
 public class DefaultBeanFactory implements BeanFactory{
 	//bean工厂单例
@@ -267,8 +270,39 @@ public class DefaultBeanFactory implements BeanFactory{
         Field[] beanFields = beanClass.getDeclaredFields();
         if (beanFields != null && beanFields.length > 0) {
             for (Field beanField : beanFields) {
+            	if(beanField.isAnnotationPresent(Value.class)) {
+            		//注入value值
+            		String key = beanField.getAnnotation(Value.class).value();
+            		Class<?> type = beanField.getType();
+            		if(!"".equals(key)) {
+            			Object value=null;
+            			if(type.equals(String.class)) {
+            				value = ConfigUtil.getString(key);
+            			}
+            			else if (type.equals(Integer.class)) {
+							value = ConfigUtil.getInt(key);
+						}
+            			else if (type.equals(Float.class)) {
+							value = ConfigUtil.getFloat(key);
+						}
+            			else if (type.equals(Boolean.class)) {
+							value = ConfigUtil.getBoolean(key);
+						}
+            			else if (type.equals(Long.class)) {
+							value = ConfigUtil.getLong(key);
+						}
+            			else if (type.equals(Double.class)) {
+							value = ConfigUtil.getDouble(key);
+						}
+            			else {
+							throw new RuntimeException("不允许的类型");
+						}
+            			beanField.setAccessible(true);
+            			beanField.set(bean, value);
+            		}
+            	}
                 //找Autowired/Resource注解属性
-                if (beanField.isAnnotationPresent(Autowired.class) || beanField.isAnnotationPresent(Resource.class)) {
+            	else if (beanField.isAnnotationPresent(Autowired.class) || beanField.isAnnotationPresent(Resource.class)) {
                     Class<?> beanFieldClass = beanField.getType();
                     String qualifier = null;
                     if(beanField.isAnnotationPresent(Autowired.class)) {

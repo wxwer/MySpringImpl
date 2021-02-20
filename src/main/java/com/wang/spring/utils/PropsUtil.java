@@ -36,7 +36,7 @@ public final class PropsUtil {
    * 获取 String 类型的属性值（默认值为空字符串）
    */
   public static String getString(Properties props, String key) {
-      return getString(props, key, "");
+      return props.getProperty(key);
   }
 
   /**
@@ -54,7 +54,7 @@ public final class PropsUtil {
    * 获取 int 类型的属性值（默认值为 0）
    */
   public static int getInt(Properties props, String key) {
-      return getInt(props, key, 0);
+      return Integer.parseInt(props.getProperty(key));
   }
 
   /**
@@ -72,7 +72,7 @@ public final class PropsUtil {
    * 获取 boolean 类型属性（默认值为 false）
    */
   public static boolean getBoolean(Properties props, String key) {
-      return getBoolean(props, key, false);
+      return Boolean.parseBoolean(props.getProperty(key));
   }
 
   /**
@@ -90,7 +90,7 @@ public final class PropsUtil {
    * 获取 boolean 类型属性（默认值为 false）
    */
   public static Long getLong(Properties props, String key) {
-      return getLong(props, key);
+      return Long.parseLong(props.getProperty(key));
   }
 
   /**
@@ -103,4 +103,41 @@ public final class PropsUtil {
       }
       return value;
   }
+  
+  /**
+   * 获取 float 类型属性
+   */
+  public static Float getFloat(Properties props, String key) {
+      return Float.parseFloat(props.getProperty(key));
+  }
+
+  /**
+   * 获取 float 类型属性（可指定默认值）
+   */
+  public static Float getFloat(Properties props, String key, Float defaultValue) {
+	  Float value = defaultValue;
+      if (props.containsKey(key)) {
+          value =Float.parseFloat(props.getProperty(key));
+      }
+      return value;
+  }
+  
+  /**
+   * 获取 double 类型属性
+   */
+  public static Double getDouble(Properties props, String key) {
+      return Double.parseDouble(props.getProperty(key));
+  }
+
+  /**
+   * 获取 Double 类型属性（可指定默认值）
+   */
+  public static Double getDouble(Properties props, String key, Double defaultValue) {
+	  Double value = defaultValue;
+      if (props.containsKey(key)) {
+          value =Double.parseDouble(props.getProperty(key));
+      }
+      return value;
+  }
+  
 }

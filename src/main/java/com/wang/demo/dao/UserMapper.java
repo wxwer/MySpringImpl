@@ -11,7 +11,7 @@ import com.wang.mybatis.annotation.Select;
 @Mapper
 public interface UserMapper {
 
-	@Select("select * from user where id=>#{id}")
+	@Select("select * from user where id=#{id}")
 	public User selectUser(@Param("id") Integer id);
 	
 	@Insert("insert into user(username,password,timestamp) values(#{username},#{password},#{timestamp})")

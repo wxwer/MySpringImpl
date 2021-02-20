@@ -12,6 +12,7 @@ public class ConfigUtil {
      */
     private static final Properties CONFIG_PROPS = PropsUtil.loadProps(ConfigConstant.CONFIG_FILE);
 
+    
     /**
      * 获取 JDBC 驱动
      */
@@ -99,5 +100,26 @@ public class ConfigUtil {
      */
     public static boolean getBoolean(String key) {
         return PropsUtil.getBoolean(CONFIG_PROPS, key);
+    }
+    
+    /**
+     * 根据属性名获取 float 类型的属性值
+     */
+    public static Float getFloat(String key) {
+        return PropsUtil.getFloat(CONFIG_PROPS, key);
+    }
+    
+    /**
+     * 根据属性名获取 double 类型的属性值
+     */
+    public static Double getDouble(String key) {
+        return PropsUtil.getDouble(CONFIG_PROPS, key);
+    }
+    
+    /**
+     * 根据属性名获取 long 类型的属性值
+     */
+    public static Long getLong(String key) {
+        return PropsUtil.getLong(CONFIG_PROPS, key);
     }
 }

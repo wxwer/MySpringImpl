@@ -5,6 +5,7 @@ import com.wang.demo.dao.UserMapper;
 import com.wang.demo.model.User;
 import com.wang.demo.model.UserRequest;
 import com.wang.spring.annotation.ioc.Autowired;
+import com.wang.spring.annotation.ioc.Value;
 
 import redis.clients.jedis.Jedis;
 
@@ -61,5 +62,6 @@ public class UserService implements IUserService{
 		// TODO Auto-generated method stub
 		return userMapper.selectUser(id);
 	}
+	
 
 }
