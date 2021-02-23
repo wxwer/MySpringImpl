@@ -14,7 +14,7 @@ import com.wang.mybatis.annotation.Param;
 import com.wang.mybatis.annotation.Select;
 import com.wang.mybatis.annotation.Update;
 import com.wang.mybatis.constant.SqlTypeConstant;
-import com.wang.mybatis.execute.ExecutorFactory;
+import com.wang.mybatis.executor.ExecutorFactory;
 import com.wang.spring.ioc.BeanDefinition;
 import com.wang.spring.ioc.BeanDefinitionRegistry;
 import com.wang.spring.ioc.ClassSetHelper;

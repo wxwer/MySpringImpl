@@ -11,5 +11,9 @@ public interface IUserService {
 	
 	boolean logout(String username);
 	
-	User findUser(Integer id);
+	User findUser(Integer id) throws Exception;
+	
+	User findUser1(Integer id1) throws Exception;
+	
+	User findUser2(Integer id2);
 }

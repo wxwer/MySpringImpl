@@ -28,9 +28,9 @@ import com.wang.spring.ioc.GenericBeanDefinition;
 public class AOPHelper {
 	private static AOPHelper aopHelper=null;
 	//需要代理的目标类和目标方法的映射
-	private static Map<Class<?>, List<Method>> classMethodMap= new ConcurrentHashMap();
+	private static Map<Class<?>, List<Method>> classMethodMap= new ConcurrentHashMap<>();
 	//需要代理的目标方法和增强类的映射，value的map的key为通知的类型
-	private static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = new ConcurrentHashMap();
+	private static Map<Method, Map<String, List<Advice>>> methodAdvicesMap = new ConcurrentHashMap<>();
 	/**
 	 * 初始化aop助手
 	 */

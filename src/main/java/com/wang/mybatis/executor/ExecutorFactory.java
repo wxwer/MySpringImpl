@@ -1,4 +1,4 @@
-package com.wang.mybatis.execute;
+package com.wang.mybatis.executor;
 
 /**
  * 执行器工厂

@@ -1,4 +1,4 @@
-package com.wang.mybatis.execute;
+package com.wang.mybatis.executor;
 
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
@@ -12,6 +12,7 @@ import com.wang.mybatis.handler.PreparedStatementHandler;
 import com.wang.mybatis.handler.ResultSetHandler;
 import com.wang.mybatis.transaction.TransactionFactory;
 import com.wang.mybatis.transaction.TransactionManager;
+import com.wang.mybatis.transaction.TransactionStatus;
 
 /**
  * 简单执行器
@@ -94,8 +95,8 @@ public class SimpleExecutor implements Executor{
     }
     
     @Override
-    public void commit() throws SQLException {
-        transactionManager.commit();
+    public void commit(TransactionStatus status) throws SQLException {
+        transactionManager.commit(status);
     }
 
     @Override

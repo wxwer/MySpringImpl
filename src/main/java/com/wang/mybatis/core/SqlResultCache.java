@@ -1,11 +1,11 @@
 package com.wang.mybatis.core;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SqlResultCache{
 	//Sql语句的执行缓存
-    private static Map<String,Object> map = new HashMap<>();
+    private static Map<String,Object> map = new ConcurrentHashMap<>();
 
     public void putCache(String key, Object val) {
         map.put(key,val);

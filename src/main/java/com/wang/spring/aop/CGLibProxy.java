@@ -7,7 +7,8 @@ import java.util.Map;
 
 import com.wang.mybatis.transaction.TransactionFactory;
 import com.wang.mybatis.transaction.TransactionManager;
-import com.wang.spring.annotation.aop.Transaction;
+import com.wang.mybatis.transaction.TransactionStatus;
+import com.wang.spring.annotation.aop.Transactional;
 import com.wang.spring.common.MyProxy;
 import com.wang.spring.constants.AdviceTypeConstant;
 
@@ -47,14 +48,15 @@ public class CGLibProxy implements MethodInterceptor,MyProxy{
 	@Override
 	public Object intercept(Object object, Method method, Object[] arg2, MethodProxy methodProxy) throws Throwable {
 		Object result=null;
+		TransactionStatus status = geTransactionStatus(object, method);
+		status.isTrans = transactionManager.isTransactionPresent();
 		//判断是否增强
 		Map<String, List<Advice>> advices =  methodAdvicesMap.get(method);
 		try {
-			//开启事务
-			beginTransaction(object, method);
 			//前置增强
 			invokeAdvice(method,advices,AdviceTypeConstant.BEFORE);
 			//环绕增强
+			System.out.println("当前事务是否存在:"+status.isTrans);
 			if(isAdviceNeed(method) && advices!=null && advices.containsKey(AdviceTypeConstant.AROUND)) {
 				List<Advice> aroundAdvices = advices.get(AdviceTypeConstant.AROUND);
 				if(aroundAdvices!=null && !aroundAdvices.isEmpty()) {
@@ -62,29 +64,79 @@ public class CGLibProxy implements MethodInterceptor,MyProxy{
 					JoinPoint joinPoint = new JoinPoint(object, methodProxy, arg2);
 					Method adviceMethod = advice.getAdviceMethod();
 					Object aspect = advice.getAspect();
-					result=adviceMethod.invoke(aspect,joinPoint);
+					try {
+						//开启事务
+						beginTransaction(status);
+						//执行方法
+						result=adviceMethod.invoke(aspect,joinPoint);
+						//提交事务
+						commitTransaction(status);
+					} catch (Throwable e) {
+						e.printStackTrace();
+						//回滚事务
+						for(Class<? extends Throwable> th:status.rollbackFor) {
+							if(th.isAssignableFrom(e.getClass())) {
+								rollbackTransaction(status);
+							}
+						}
+						
+					}
+					finally {
+						//释放事务
+						closeTransaction(status);
+					}
+					
 				}
 				else {
-					result= methodProxy.invokeSuper(object, arg2);
+					try {
+						//开启事务
+						beginTransaction(status);
+						result= methodProxy.invokeSuper(object, arg2);
+						commitTransaction(status);
+					} catch (Throwable e) {
+						e.printStackTrace();
+						//回滚事务
+						for(Class<? extends Throwable> th:status.rollbackFor) {
+							if(th.isAssignableFrom(e.getClass())) {
+								rollbackTransaction(status);
+							}
+						}
+					}
+					finally {
+						closeTransaction(status);
+					}
+					
 				}
 			}
 			else {
-				result= methodProxy.invokeSuper(object, arg2);
+				try {
+					//开启事务
+					beginTransaction(status);
+					result= methodProxy.invokeSuper(object, arg2);
+					commitTransaction(status);
+				} catch (Throwable e) {
+					e.printStackTrace();
+					//回滚事务
+					for(Class<? extends Throwable> th:status.rollbackFor) {
+						if(th.isAssignableFrom(e.getClass())) {
+							rollbackTransaction(status);
+						}
+					}
+				}
+				finally {
+					closeTransaction(status);
+				}
 			}
 			//后置增强
 			invokeAdvice(method,advices, AdviceTypeConstant.AFTER);
-			commitTransaction(object, method);
 		} 
 		catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
-			//回滚事务
-			rollbackTransaction(object, method);
 			//异常增强
 			invokeAdvice(method,advices, AdviceTypeConstant.AFTERTHROWING);
 		}
 		finally {
-			closeTransaction(object, method);
 			//返回前增强
 			invokeAdvice(method,advices, AdviceTypeConstant.AFTERRETURNING);
 		}
@@ -104,41 +156,90 @@ public class CGLibProxy implements MethodInterceptor,MyProxy{
 		}
 		
 	}
-	//判断是否增强
+	/**
+	 * 判断是否增强
+	 * @param method
+	 * @return
+	 */
 	private boolean isAdviceNeed(Method method) {
 		return methodAdvicesMap.containsKey(method);
 	}
-	
-	//判断是否需要事务管理
-	private boolean isTrasactionNeed(Object object,Method method) {
-		if(transactionManager!=null && (object.getClass().isAnnotationPresent(Transaction.class) || method.isAnnotationPresent(Transaction.class))) {
-			return true;
+	/**
+	 * 获得TransactionStatus对象
+	 * @param object
+	 * @param method
+	 * @return
+	 */
+	private TransactionStatus geTransactionStatus(Object object,Method method) {
+		TransactionStatus status = new TransactionStatus();
+		status.isNeed = false;
+		if(transactionManager!=null && (object.getClass().isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Transactional.class))) {
+			status.isNeed = true;
+			if(object.getClass().isAnnotationPresent(Transactional.class)) {
+				Transactional transactional = object.getClass().getAnnotation(Transactional.class);
+				status.isolationLevel = transactional.Isolation();
+				status.propagationLevel = transactional.Propagation();
+				status.rollbackFor = transactional.rollbackFor();
+			}
+			if(method.isAnnotationPresent(Transactional.class)){
+				Transactional transactional = method.getAnnotation(Transactional.class);
+				status.isolationLevel = transactional.Isolation();
+				status.propagationLevel = transactional.Propagation();
+				status.rollbackFor = transactional.rollbackFor();
+			}
 		}
-		return false;
+		return status;
 	}
-	
-	private void beginTransaction(Object object,Method method) throws SQLException {
-		if(isTrasactionNeed(object, method)) {
-			transactionManager.beginTransaction();
-			System.out.println("开启事务，id="+transactionManager.getTransactionId());
+	/**
+	 * 判断是否需要事务管理
+	 * @param status
+	 * @return
+	 */
+	private boolean isTrasactionNeed(TransactionStatus status) {
+		return status.isNeed;
+	}
+	/**
+	 * 开启事务
+	 * @param status
+	 * @throws SQLException
+	 */
+	private void beginTransaction(TransactionStatus status) throws SQLException {
+		if(isTrasactionNeed(status)) {
+			transactionManager.beginTransaction(status);
+			System.out.println("开启事务，事务Id="+transactionManager.getTransactionId());
 		}
 	}
-	private void commitTransaction(Object object,Method method) throws SQLException {
-		if(isTrasactionNeed(object, method)) {
-			transactionManager.commit();
-			System.out.println("提交事务，id="+transactionManager.getTransactionId());
+	/**
+	 * 提交事务
+	 * @param status
+	 * @throws SQLException
+	 */
+	private void commitTransaction(TransactionStatus status) throws SQLException {
+		if(isTrasactionNeed(status)) {
+			transactionManager.commit(status);
+			System.out.println("提交事务，事务Id="+transactionManager.getTransactionId());
 		}
 	}
-	private void rollbackTransaction(Object object,Method method) throws SQLException {
-		if(isTrasactionNeed(object, method)) {
+	/**
+	 * 回滚事务
+	 * @param status
+	 * @throws SQLException
+	 */
+	private void rollbackTransaction(TransactionStatus status) throws SQLException {
+		if(isTrasactionNeed(status)) {
 			transactionManager.rollback();
-			System.out.println("回滚事务，id="+transactionManager.getTransactionId());
+			System.out.println("回滚事务，事务Id="+transactionManager.getTransactionId());
 		}
 	}
-	private void closeTransaction(Object object,Method method) throws SQLException {
-		if(isTrasactionNeed(object, method)) {
-			System.out.println("释放事务，id="+transactionManager.getTransactionId());
-			transactionManager.closeTransaction();
+	/**
+	 * 关闭事务
+	 * @param status
+	 * @throws SQLException
+	 */
+	private void closeTransaction(TransactionStatus status) throws SQLException {
+		if(isTrasactionNeed(status)) {
+			System.out.println("关闭事务，事务Id="+transactionManager.getTransactionId());
+			transactionManager.closeTransaction(status);
 		}
 	}
 }

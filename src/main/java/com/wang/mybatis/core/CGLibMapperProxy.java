@@ -8,7 +8,7 @@ import com.wang.mybatis.annotation.Insert;
 import com.wang.mybatis.annotation.Select;
 import com.wang.mybatis.annotation.Update;
 import com.wang.mybatis.constant.SqlTypeConstant;
-import com.wang.mybatis.execute.Executor;
+import com.wang.mybatis.executor.Executor;
 import com.wang.spring.common.MyProxy;
 
 import net.sf.cglib.proxy.Enhancer;

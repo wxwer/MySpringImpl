@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.wang.demo.dao.UserMapper;
 import com.wang.demo.model.User;
 import com.wang.demo.model.UserRequest;
+import com.wang.spring.annotation.aop.Transactional;
 import com.wang.spring.annotation.ioc.Autowired;
 import com.wang.spring.annotation.ioc.Value;
+import com.wang.spring.constants.PropagationLevelConstant;
 
 import redis.clients.jedis.Jedis;
 
@@ -57,11 +59,29 @@ public class UserService implements IUserService{
 		return true;
 	}
 
+	
 	@Override
-	public User findUser(Integer id) {
+	@Transactional(rollbackFor = {Exception.class})
+	public User findUser1(Integer id1) throws Exception {
 		// TODO Auto-generated method stub
-		return userMapper.selectUser(id);
+		return userMapper.selectUser(id1);
 	}
 	
+	@Override
+	@Transactional
+	public User findUser2(Integer id2) {
+		// TODO Auto-generated method stub
+		return userMapper.selectUser(id2);
+	}
 
+	@Override
+	//@Transactional
+	public User findUser(Integer id) throws Exception {
+		// TODO Auto-generated method stub
+		User user1 = findUser1(id);
+		
+		User user2 = findUser2(id);
+		return user1;
+		
+	}
 }

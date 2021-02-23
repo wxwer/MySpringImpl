@@ -1,8 +1,10 @@
-package com.wang.mybatis.execute;
+package com.wang.mybatis.executor;
 
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.List;
+
+import com.wang.mybatis.transaction.TransactionStatus;
 
 /**
  * 执行器接口
@@ -15,7 +17,7 @@ public interface Executor {
 	//执行update,delete,insert语句
 	int update(Method method,Object[] args)throws SQLException;
 	//提交事务
-    void commit() throws SQLException;
+    void commit(TransactionStatus status) throws SQLException;
     //回滚事务
     void rollback() throws SQLException;
     //释放连接
