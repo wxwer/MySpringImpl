@@ -1,6 +1,6 @@
-手写简易版仿Springboot框架，实现了IOC，AOP，MVC，Mybatis等模块，此外还实现事务管理，能够连接外置Jedis,Kafka等客户端，内嵌了tomcat服务器和Freemarker解析器，可进行简单的增删改查和实现动态页面。所有注解和Springboot的一毛一样，不需要进行XML配置，简单易用，代码简单结构清晰，有比较详细的代码注释。  
+手写简易版仿Springboot框架，实现了IOC，AOP，MVC，Mybatis等模块，此外还实现事务管理，能够连接外置Jedis,Kafka等客户端，内嵌了tomcat服务器和Freemarker解析器，可进行简单的增删改查和实现动态页面。所有注解基本和Springboot的一毛一样，不需要进行XML配置，简单易用，代码简单结构清晰，有比较详细的代码注释。  
   
-1.实现了IOC容器和依赖注入，用单例模式实现Bean工厂类，通过反射自动进行Service,Component,Controller类的自动生成和注入，通过缓存解决了循环依赖问题，有多种注解方式进行注入，@Autowired，@Qualifier，@Resource的语义和用法与Spring的一样，此外还实现了@Configuration中的配置的Bean的自动注入，通过手动配置能够连接外部Jedis,Kafka等客服端。  
+1.实现了IOC容器和依赖注入，用单例模式实现Bean工厂类，通过反射自动进行Service,Component,Controller类的自动生成和注入，通过三级缓存解决了循环依赖问题，有多种注解方式进行注入，@Autowired，@Qualifier，@Resource的语义和用法与Spring的一样，此外还实现了@Configuration中的配置的Bean的自动注入，通过手动配置能够连接外部Jedis,Kafka等客服端。  
   
 2.通过CGLib动态代理实现了AOP（面向切面编程），使用注解来配置切面，有@Before，@After，@Around，@Afterthrowing，@AfterReturning等多种通知，可通过@Pointcut配置切点。能实现对同一个方法的多次增强，并通过通知的order变量配置增强的顺序。通过动态代理还实现了Spring的事务管理，在类或者方法上加上@Transactional即可获得事务管理功能，可配置事务的四种隔离级别、回滚异常类和六种传播行为(Propagation.NESTED仍存在问题)，使用ThreadLocal<Connection>缓存连接和ThreadLocal<Stack<Connection>>缓存上级事务连接来实现事务的传播行为，并保证事务中的操作获取到的是同一个连接，可进行事务提交，出错时自动进行事务回滚。  
       

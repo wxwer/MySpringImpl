@@ -1,7 +1,5 @@
 package com.wang.demo.dao;
 
-import java.util.List;
-
 import com.wang.demo.model.User;
 import com.wang.mybatis.annotation.Insert;
 import com.wang.mybatis.annotation.Mapper;

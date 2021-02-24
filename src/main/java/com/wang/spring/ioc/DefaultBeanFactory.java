@@ -18,13 +18,18 @@ import com.wang.spring.annotation.mvc.Controller;
 import com.wang.spring.common.MyProxy;
 import com.wang.spring.constants.BeanScope;
 import com.wang.spring.utils.ConfigUtil;
-import com.wang.spring.utils.PropsUtil;
 
 public class DefaultBeanFactory implements BeanFactory{
 	//bean工厂单例
 	private static DefaultBeanFactory instance = null;
-	//Bean容器，也叫IOC容器
-	private static Map<String, Object> beanMap = new ConcurrentHashMap<>();
+	//一级缓存Bean容器，IOC容器，直接从此处获取Bean
+	private static Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
+	//二级缓存，为了将完全地Bean和半成品的Bean分离，避免读取到不完整的Bean
+	private static Map<String,Object> earlySingletonObjects=new ConcurrentHashMap<>();
+	//三级缓存，值为一个对象工厂，可以返回实例对象
+	private static Map<String,ObjectFactory> singletonFactories=new ConcurrentHashMap<>();
+	//是否在创建中
+	private  static  Set<String> singletonsCurrennlyInCreation=new HashSet<>();
 	//Bean的注册信息BeanDefinition容器
 	private static Map<String, BeanDefinition> beanDefinitionMap = BeanDefinitionRegistry.getBeanDefinitionMap();
 	/**
@@ -66,7 +71,7 @@ public class DefaultBeanFactory implements BeanFactory{
 		return instance;
 	}
 	public static Map<String,Object> getBeanMap() {
-		return beanMap;
+		return singletonObjects;
 	}
 	
 	/**
@@ -132,7 +137,7 @@ public class DefaultBeanFactory implements BeanFactory{
 		// TODO Auto-generated method stub
 		try {
 			Objects.requireNonNull(beanName, "beanName 不能为空");
-			beanMap.put(beanName, obj);
+			singletonObjects.put(beanName, obj);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -177,12 +182,12 @@ public class DefaultBeanFactory implements BeanFactory{
 					Class<?> returnClass = method.getReturnType();
 					Object bean = method.invoke(configBean);
 					String keyName = returnClass.getName();
-					beanMap.put(keyName, bean);
+					singletonObjects.put(keyName, bean);
 					System.out.println("成功注入"+configClass.getName()+" 中的  "+returnClass.getName());
 				}
 				
 			}
-			beanMap.remove(configClass.getName());
+			singletonObjects.remove(configClass.getName());
 		}
 	}
 	
@@ -194,11 +199,19 @@ public class DefaultBeanFactory implements BeanFactory{
 	 */
 	private Object doGetBean(String beanName,BeanScope beanScope) throws Exception{
 		Objects.requireNonNull(beanName, "beanName 不能为空");
-		Object bean = beanMap.get(beanName);
-		if(bean!=null) {
+		//获取单例
+		Object bean = getSingleton(beanName);
+		if(bean != null) {
 			return bean;
 		}
+		//如果未获取到bean，且bean不在创建中，则置bean的状态为在创建中
+		if(!singletonsCurrennlyInCreation.contains(beanName)) {
+			singletonsCurrennlyInCreation.add(beanName);
+		}
 		BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+		if(beanDefinition==null) {
+			throw new Exception("不存在 "+beanName+" 的定义");
+		}
 		Class<?> beanClass = beanDefinition.getBeanClass();
 		//找到实现类
 		beanClass = findImplementClass(beanClass,null);
@@ -210,54 +223,62 @@ public class DefaultBeanFactory implements BeanFactory{
 		else {
 			bean = beanClass.getDeclaredConstructor().newInstance();
 		}
+		//将实例化后，但未注入属性的bean，放入三级缓存中
+		final Object temp = bean;
+		singletonFactories.put(beanName, new ObjectFactory() {
+			@Override
+			public Object getObject() {
+				// TODO Auto-generated method stub
+				return temp;
+			}
+		});
 		//反射调用init方法
 		String initMethodName = beanDefinition.getInitMethodName();
 		if(initMethodName!=null) {
 			Method method = beanClass.getMethod(initMethodName, null);
 			method.invoke(bean, null);
 		}
-		//如果bean是单例的则缓存
-		if(beanScope == BeanScope.SINGLETON) {
-			beanMap.put(beanName, bean);
-		}
+		
 		//注入bean的属性
 		fieldInject(beanClass, bean, false);
+		//如果三级缓存存在bean，则拿出放入二级缓存中
+		if(singletonFactories.containsKey(beanName)) {
+			ObjectFactory factory  = singletonFactories.get(beanName);
+			earlySingletonObjects.put(beanName, factory.getObject());
+			singletonFactories.remove(beanName);
+		}
+		//如果二级缓存存在bean，则拿出放入一级缓存中
+		if(earlySingletonObjects.containsKey(beanName)) {
+			bean = earlySingletonObjects.get(beanName);
+			singletonObjects.put(beanName, bean);
+			earlySingletonObjects.remove(beanName);
+		}
 		return bean;
 	}
 	/**
-	 * 找到实现类
-	 * @param interfaceClass
+	 * 从缓存中获取单例bean
+	 * @param beanName
 	 * @return
 	 */
-	private static Class<?> findImplementClass(Class<?> interfaceClass,String name){
-		Class<?> implementClass = interfaceClass;
-		Set<Class<?>> classSet = new HashSet<>();
-		for(Class<?> cls : ClassSetHelper.getClassSet()) {
-			if(interfaceClass!=null && interfaceClass.isAssignableFrom(cls) && !interfaceClass.equals(cls)) {
-				if(name!=null && !name.equals("")) {
-					if(isClassAnnotationedName(cls, name)) {
-						return cls;
-					}
+	private Object getSingleton(String beanName) {
+		//如果一级存在bean，则直接返回
+		Object bean = singletonObjects.get(beanName);
+		if(bean!=null) {
+			return bean;
+		}
+		//如果一级缓存不存在bean，且bean在创建中，则从二级缓存中拿出半成品bean返回，否则从三级缓存拿出放入二级缓存中
+		if(singletonsCurrennlyInCreation.contains(beanName)) {
+			bean = earlySingletonObjects.get(beanName);
+			if(bean == null) {
+				ObjectFactory factory = singletonFactories.get(beanName);
+				if(factory != null) {
+					bean = factory.getObject();
+					earlySingletonObjects.put(beanName, bean);
+					singletonFactories.remove(beanName);
 				}
-				classSet.add(cls);
-			}
-			else if(interfaceClass==null) {
-				if(name!=null && !name.equals("")) {
-					if(isClassAnnotationedName(cls, name) || (cls.getSimpleName().equals(name) && !cls.isInterface())) {
-						return cls;
-					}
-				}
-			}
-		if(classSet!=null && !classSet.isEmpty()) {
-			implementClass = classSet.iterator().next();
 			}
 		}
-		return implementClass;
-	}
-	private static boolean isClassAnnotationedName(Class<?> cls,String name) {
-		return (cls.isAnnotationPresent(Component.class) && cls.getAnnotation(Component.class).value().equals(name)) ||
-				(cls.isAnnotationPresent(Service.class) && cls.getAnnotation(Service.class).value().equals(name)) ||
-				(cls.isAnnotationPresent(Controller.class) && cls.getAnnotation(Controller.class).value().equals(name));
+		return bean;
 	}
 	/**
 	 * 依赖注入
@@ -325,7 +346,6 @@ public class DefaultBeanFactory implements BeanFactory{
                     		}
                     		else {
                     			beanFieldClass = findImplementClass(beanFieldClass, null);
-                    			//System.out.println("beanFieldClass "+beanFieldClass);
                     		}
                     	}
                     	else {
@@ -336,10 +356,7 @@ public class DefaultBeanFactory implements BeanFactory{
                     beanField.setAccessible(true);
                     try {
                         //反射注入属性实例。
-                        beanField.set(bean,
-                                beanMap.containsKey(beanFieldClass.getName()) ?
-                                        beanMap.get(beanFieldClass.getName()) : //第二遍再判断时前面已经缓存了b，可以取到，
-                                        getBean(beanFieldClass.getName()) //第一遍缓存没有b，再getBean。
+                        beanField.set(bean,getBean(beanFieldClass.getName()) //第一遍缓存没有b，再getBean。
                         );
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
@@ -349,12 +366,48 @@ public class DefaultBeanFactory implements BeanFactory{
         }
 
     }
+	
+	/**
+	 * 找到实现类
+	 * @param interfaceClass
+	 * @return
+	 */
+	private static Class<?> findImplementClass(Class<?> interfaceClass,String name){
+		Class<?> implementClass = interfaceClass;
+		Set<Class<?>> classSet = new HashSet<>();
+		for(Class<?> cls : ClassSetHelper.getClassSet()) {
+			if(interfaceClass!=null && interfaceClass.isAssignableFrom(cls) && !interfaceClass.equals(cls)) {
+				if(name!=null && !name.equals("")) {
+					if(isClassAnnotationedName(cls, name)) {
+						return cls;
+					}
+				}
+				classSet.add(cls);
+			}
+			else if(interfaceClass==null) {
+				if(name!=null && !name.equals("")) {
+					if(isClassAnnotationedName(cls, name) || (cls.getSimpleName().equals(name) && !cls.isInterface())) {
+						return cls;
+					}
+				}
+			}
+		if(classSet!=null && !classSet.isEmpty()) {
+			implementClass = classSet.iterator().next();
+			}
+		}
+		return implementClass;
+	}
+	private static boolean isClassAnnotationedName(Class<?> cls,String name) {
+		return (cls.isAnnotationPresent(Component.class) && cls.getAnnotation(Component.class).value().equals(name)) ||
+				(cls.isAnnotationPresent(Service.class) && cls.getAnnotation(Service.class).value().equals(name)) ||
+				(cls.isAnnotationPresent(Controller.class) && cls.getAnnotation(Controller.class).value().equals(name));
+	}
 	/**
 	 * beanMap是否为空
 	 */
 	@Override
 	public boolean isEmpty() {
 		// TODO Auto-generated method stub
-		return beanMap==null || beanMap.isEmpty();
+		return singletonObjects==null || singletonObjects.isEmpty();
 	}
 }
