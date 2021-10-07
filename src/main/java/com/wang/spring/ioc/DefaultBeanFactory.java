@@ -21,7 +21,7 @@ import com.wang.spring.utils.ConfigUtil;
 
 public class DefaultBeanFactory implements BeanFactory{
 	//bean工厂单例
-	private static DefaultBeanFactory instance = null;
+	private static volatile DefaultBeanFactory instance = null;
 	//一级缓存Bean容器，IOC容器，直接从此处获取Bean
 	private static Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
 	//二级缓存，为了将完全地Bean和半成品的Bean分离，避免读取到不完整的Bean
@@ -61,10 +61,11 @@ public class DefaultBeanFactory implements BeanFactory{
 	 * @return
 	 */
 	public static DefaultBeanFactory getInstance() {
-		synchronized (DefaultBeanFactory.class) {
-			if(null==instance) {
-				synchronized (DefaultBeanFactory.class) {
+		if(null==instance) {
+			 synchronized (DefaultBeanFactory.class){
+				if(null==instance) {
 					instance=new DefaultBeanFactory();
+					return instance;
 				}
 			}
 		}

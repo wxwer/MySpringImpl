@@ -26,7 +26,7 @@ import com.wang.spring.ioc.DefaultBeanFactory;
 import com.wang.spring.ioc.GenericBeanDefinition;
 
 public class AOPHelper {
-	private static AOPHelper aopHelper=null;
+	private static volatile AOPHelper aopHelper=null;
 	//需要代理的目标类和目标方法的映射
 	private static Map<Class<?>, List<Method>> classMethodMap= new ConcurrentHashMap<>();
 	//需要代理的目标方法和增强类的映射，value的map的key为通知的类型
@@ -48,10 +48,11 @@ public class AOPHelper {
 	 * @return
 	 */
 	public static AOPHelper getInstance() {
-		synchronized (AOPHelper.class) {
-			if(aopHelper==null) {
-				synchronized (AOPHelper.class) {
+		if(aopHelper==null) {
+			synchronized (AOPHelper.class) {
+				if(aopHelper==null) {
 					aopHelper = new AOPHelper();
+					return aopHelper;
 				}
 			}
 		}
